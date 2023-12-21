@@ -1,5 +1,6 @@
 from sense_hat import SenseHat
 from flask import Flask
+from threading import Thread
 
 
 class GetProp():
@@ -32,13 +33,29 @@ class GetProp():
                 c = 'P'
         self._s.show_letter(c)
             
+def mainLoop(s: SenseHat):
+    prop = GetProp(s)
+    while True:
+        event = s.stick.wait_for_event(emptybuffer=True)
+        if event is None:
+            continue
+        match event.direction:
+            case "middle":
+                prop.ShowProp()
+            case "up":
+                #TODO replace with accelerometer
+                s.flip_v()
+            case "right":
+                #TODO replace with accelerometer
+                s.flip_h()
+            case "left":
+                prop.changeProp()
+            case "down":
+                pass
+                #change color?
 
-
-s = SenseHat()
-prop = GetProp(s)
-
-#TODO Move into new script if broken during sleep
 app = Flask(__name__)
+s = SenseHat()
 
 @app.route("/")
 def hello_world():
@@ -53,22 +70,9 @@ def get_pressure():
 @app.route("/humidity")
 def get_humidity():
     return str(s.get_humidity())
-    
-while True:
-    event = s.stick.wait_for_event(emptybuffer=True)
-    if event is None:
-        continue
-    match event.direction:
-        case "middle":
-            prop.ShowProp()
-        case "up":
-            s.flip_v()
-        case "right":
-            s.flip_h()
-        case "left":
-            prop.changeProp()
-        case "down":
-            pass
-            #change color?
 
+t1 = Thread(target=app.run())
+t1.start()
+t2 = Thread(target=mainLoop, args=s)
+t2.start()
 
