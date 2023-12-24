@@ -1,2 +1,2 @@
-sense-hat
+sense_hat
 Flask
